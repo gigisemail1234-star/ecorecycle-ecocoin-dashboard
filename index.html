@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="german" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoRecycle Protocol Dashboard - Polygon Mainnet Live</title>
+    <!-- CDN-Link von jsDelivr -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="output.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        darkbg: '#0B132B',
+                        cardbg: '#1C2541',
+                        borderbg: '#3A506B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1527;
+            color: #f3f4f6;
+        }
+        .glass-panel {
+            background: rgba(28, 37, 65, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(34, 197, 94, 0.3);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(34, 197, 94, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between custom-scrollbar">
+    <!-- TOP HEADER -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-gray-800 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-300 flex items-center justify-center shadow-lg shadow-green-500/20">
+                    <i class="fa-solid font-bold fa-recycle text-slate-950 text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-xl font-bold tracking-tight text-white">EcoRecycle <span class="text-green-400">Protocol</span></h1>
+                        <span class="text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full font-mono">v1.0 LIVE</span>
+                    </div>
+                    <p class="text-xs text-gray-400">ALLROUND SERVICE • DPMA Az 302026259255.4</p>
+                </div>
+            </div>
+
+            <!-- Network Status & Active Wallet -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Status Badge -->
+                <div id="network-badge" onclick="connectWallet()" class="cursor-pointer flex items-center space-x-2 bg-slate-900/80 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-mono hover:border-green-500/50 transition-all">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                    </span>
+                    <span id="network-text" class="text-gray-300">Connect Wallet: <span class="text-amber-400 font-semibold">Polygon (137)</span></span>
+                </div>
+
+                <!-- Role Selector -->
+                <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-700 flex items-center text-xs font-medium">
+                    <button id="role-citizen-btn" onclick="switchRole('citizen')" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-green-400 bg-slate-800 shadow">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Operator</span>
+                    </button>
+                    <button id="role-partner-btn" onclick="switchRole('partner')" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-gray-400 hover:text-white">
+                        <i class="fa-solid fa-building-circle-check"></i>
+                        <span>Campaign</span>
+                    </button>
+                    <button id="role-admin-btn" onclick="switchRole('admin')" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-gray-400 hover:text-white">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Founder</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6 flex-grow">
+
+        <!-- ACTIVE ACCOUNT NOTIFICATION BANNER -->
+        <div id="account-banner" class="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div id="role-icon-box" class="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Connected Founder / Operator Wallet</div>
+                    <div id="active-address" class="text-sm font-mono font-medium text-emerald-300">Not connected (Click Connect Wallet above)</div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 text-xs font-mono bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
+                <div class="text-gray-400">Gas Price: <span id="gas-price" class="text-white">-- Gwei</span></div>
+                <div class="text-gray-600">|</div>
+                <div class="text-gray-400">Polygon Block: <span id="current-block" class="text-green-400 font-bold">#--</span></div>
+            </div>
+        </div>
+
+        <!-- KPI METRICS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <!-- Metric 1 -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-green-500/40 transition-all">
+                <div class="absolute -right-2 -bottom-2 opacity-10 text-green-400 text-7xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-weight-hanging"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total Verified Volume</div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpi-weight" class="text-3xl font-extrabold text-white">0.00</span>
+                    <span class="text-sm font-semibold text-green-400">kg</span>
+                </div>
+                <div class="mt-2 text-xs text-emerald-400/80 flex items-center">
+                    <i class="fa-solid fa-check-double text-xs mr-1"></i> § 21 KrWG Sortenreinheit
+                </div>
+            </div>
+
+            <!-- Metric 2 -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-green-500/40 transition-all">
+                <div class="absolute -right-2 -bottom-2 opacity-10 text-green-400 text-7xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Infrastructure Pool</div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpi-pool" class="text-3xl font-extrabold text-white">150,000</span>
+                    <span class="text-sm font-semibold text-green-400">EUR Eq.</span>
+                </div>
+                <div id="kpi-pool-status" class="mt-2 text-xs text-amber-400/90 flex items-center">
+                    <i class="fa-solid fa-lock text-xs mr-1"></i> Ready for Allocation
+                </div>
+            </div>
+
+            <!-- Metric 3 -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-green-500/40 transition-all">
+                <div class="absolute -right-2 -bottom-2 opacity-10 text-green-400 text-7xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-building-circle-check"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Protocol Operator</div>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-xl font-extrabold text-white">ALLROUND SERVICE</span>
+                </div>
+                <div class="mt-2 text-xs text-gray-400 flex items-center">
+                    <i class="fa-solid fa-shield text-xs mr-1 text-green-400"></i> Verified Smart Contract
+                </div>
+            </div>
+
+            <!-- Metric 4 -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-green-500/40 transition-all">
+                <div class="absolute -right-2 -bottom-2 opacity-10 text-green-400 text-7xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Recorded Flows On-Chain</div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpi-txs" class="text-3xl font-extrabold text-white">0</span>
+                    <span class="text-sm font-semibold text-gray-400">Entries</span>
+                </div>
+                <div class="mt-2 text-xs text-green-400 flex items-center">
+                    <i class="fa-solid fa-circle-check text-xs mr-1"></i> 100% Polygon Mainnet
+                </div>
+            </div>
+        </div>
+        <!-- DYNAMIC ACTION SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- LEFT PANEL: ACTION FORM -->
+            <div class="lg:col-span-1 glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                    <!-- Operator View: Record Material Flow -->
+                    <div id="view-citizen-action" class="space-y-4">
+                        <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-recycle text-green-400"></i>
+                            <h2 class="font-bold text-white text-lg">Record Material Flow</h2>
+                        </div>
+                        <p class="text-xs text-gray-400">Write verified material streams directly to Polygon Mainnet (§ 21 KrWG).</p>
+                        
+                        <form id="recycling-form" onsubmit="handleCitizenSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Material Category</label>
+                                <select id="mat-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500">
+                                    <option value="PET">PET Plastic Bottles</option>
+                                    <option value="Aluminium">Aluminum Cans / Metal</option>
+                                    <option value="Verbundstoff">Composite / Verbundstoff</option>
+                                    <option value="Altglas">Glass Containers</option>
+                                    <option value="Altpapier">Cardboard / Paper</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Weight (in kg — converted to grams on-chain)</label>
+                                <input type="number" id="mat-weight" step="0.1" min="0.1" value="1.5" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500">
+                            </div>
+
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-xs space-y-1">
+                                <div class="flex justify-between text-gray-400">
+                                    <span>Contract Target:</span>
+                                    <a href="https://polygonscan.com" target="_blank" class="text-green-400 font-mono hover:underline">0x0b02...7895 ↗</a>
+                                </div>
+                                <div class="flex justify-between text-gray-400">
+                                    <span>Purity Flag:</span>
+                                    <span class="text-emerald-400 font-mono">verified: true</span>
+                                </div>
+                            </div>
+
+                            <button id="submit-flow-btn" type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-slate-950 font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-green-500/20 flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Submit On-Chain (Polygon)</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Campaign View -->
+                    <div id="view-partner-action" class="space-y-4 hidden">
+                        <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-building-circle-check text-green-400"></i>
+                            <h2 class="font-bold text-white text-lg">IoT Infrastructure Spec</h2>
+                        </div>
+                        <p class="text-xs text-gray-400">On-chain campaign parameters stored in EcoRecycleProtocolV1.</p>
+                        
+                        <div class="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-3 text-xs">
+                            <div>
+                                <span class="text-gray-400 block">Hardware Framework:</span>
+                                <span id="camp-infra" class="text-white font-semibold">IoT-Muellmitteleimer und Sensorik Framework</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block">Target Beneficiary Wallet:</span>
+                                <span id="camp-target" class="text-emerald-400 font-mono break-all">0x0000000000000000000000000000000000000000</span>
+                            </div>
+                            <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                                <span class="text-gray-400">Zweckbindung Status:</span>
+                                <span id="camp-badge" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">Unallocated</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Founder Governance View -->
+                    <div id="view-admin-action" class="space-y-4 hidden">
+                        <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-shield-halved text-green-400"></i>
+                            <h2 class="font-bold text-white text-lg">Founder Governance</h2>
+                        </div>
+                        <p class="text-xs text-gray-400">Dynamically bind the 150,000 EUR infrastructure pool to a verified target wallet on-chain.</p>
+                        
+                        <form id="admin-form" onsubmit="handleActivateFunding(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Target Entity Wallet Address</label>
+                                </textarea>
+
+                            </div>
+
+                            <button id="activate-funding-btn" type="submit" class="w-full bg-slate-800 hover:bg-slate-700 text-green-400 border border-green-500/30 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-lock"></i>
+                                <span>Activate Zweckbindung On-Chain</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Toast Notification Box -->
+                <div id="toast-box" class="mt-4 p-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs hidden flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-check text-sm"></i>
+                    <span id="toast-msg">Transaction confirmed!</span>
+                </div>
+            </div>
+            <!-- RIGHT PANEL: LIVE BLOCKCHAIN REGISTRY & EVENTS (2 COLS) -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- ON-CHAIN MATERIAL REGISTRY TABLE -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-database text-green-400"></i>
+                            <h2 class="font-bold text-white text-lg">Live On-Chain Material Registry</h2>
+                        </div>
+                        <button onclick="loadBlockchainData()" class="text-xs text-green-400 hover:text-green-300 font-mono flex items-center space-x-1">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Refresh Chain</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="text-gray-400 uppercase bg-slate-900/60 rounded-lg">
+                                <tr>
+                                    <th class="p-2.5">Flow ID</th>
+                                    <th class="p-2.5">Reporter</th>
+                                    <th class="p-2.5">Category</th>
+                                    <th class="p-2.5">Volume</th>
+                                    <th class="p-2.5">Timestamp</th>
+                                    <th class="p-2.5 text-right">KrWG Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registry-table-body" class="divide-y divide-slate-800">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-500">Syncing with Polygon Mainnet...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- LIVE LEDGER / BLOCKCHAIN ACTIVITY LOG -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-cubes text-blue-400"></i>
+                            <h2 class="font-bold text-white text-lg">Polygon Smart Contract Events</h2>
+                        </div>
+                        <a href="https://polygonscan.com" target="_blank" class="text-xs text-blue-400 hover:underline font-mono">View Verified Contract on Polygonscan ↗</a>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="text-gray-400 uppercase bg-slate-900/80">
+                                <tr>
+                                    <th class="p-3">Tx / Flow</th>
+                                    <th class="p-3">Event</th>
+                                    <th class="p-3">Details</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledger-body" class="divide-y divide-slate-800/80">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="glass-panel border-t border-slate-800 py-4 px-4 text-center text-xs text-gray-400">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>EcoRecycle Protocol © 2026 — ALLROUND SERVICE (DPMA Az 302026259255.4)</div>
+            <div class="flex items-center space-x-4">
+                <span class="text-green-400 font-mono">Polygon Mainnet (137)</span>
+                <span>•</span>
+                <span class="text-gray-400">Solidity 0.8.34</span>
+                <span>•</span>
+                <span class="text-gray-400">Ethers.js v6</span>
+            </div>
+        </div>
+    </footer>
+    <!-- WEB3 POLYGON MAINNET INTEGRATION -->
+    <script>
+        // Verified Live Smart Contract on Polygon Mainnet
+        const CONTRACT_ADDRESS = "0x0b02b37ac5b56e36a2f296975622c901f6167895";
+        const POLYGON_CHAIN_ID = 137n;
+        const POLYGON_CHAIN_HEX = "0x89";
+
+        // Exact ABI matching EcoRecycleProtocolV1.sol
+        const CONTRACT_ABI = [
+            "function founder() view returns (address)",
+            "function operator() view returns (string)",
+            "function trademark() view returns (string)",
+            "function totalFlowsRecorded() view returns (uint256)",
+            "function registry(uint256) view returns (string category, uint256 volume, uint256 timestamp, address reporter, bool verified)",
+            "function infrastructureCampaign() view returns (uint256 totalPool, bool allocated, address targetEntity, string infrastructure)",
+            "function recordMaterialFlow(string _category, uint256 _volume) returns (uint256)",
+            "function activateFundingZweckbindung(address _newTargetEntity)",
+            "event FlowRecorded(uint256 indexed flowId, string category, uint256 volume, bool verified)",
+            "event FundingZweckbindungActivated(address indexed target, uint256 amount, string infrastructure)"
+        ];
+
+        let provider;
+        let signer;
+        let contract;
+        let userAddress = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initReadOnlyAndTryConnect();
+        });
+
+        // Switch UI Tabs
+        function switchRole(role) {
+            document.getElementById('role-citizen-btn').className = role === 'citizen' ? 'px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-green-400 bg-slate-800 shadow' : 'px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-gray-400 hover:text-white';
+            document.getElementById('role-partner-btn').className = role === 'partner' ? 'px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-green-400 bg-slate-800 shadow' : 'px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-gray-400 hover:text-white';
+            document.getElementById('role-admin-btn').className = role === 'admin' ? 'px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-green-400 bg-slate-800 shadow' : 'px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 text-gray-400 hover:text-white';
+
+            document.getElementById('view-citizen-action').classList.toggle('hidden', role !== 'citizen');
+            document.getElementById('view-partner-action').classList.toggle('hidden', role !== 'partner');
+            document.getElementById('view-admin-action').classList.toggle('hidden', role !== 'admin');
+        }
+    async function initReadOnlyAndTryConnect() {
+        const rpcUrl = "https://polygon-bor-rpc." + "publicnode.com";
+        const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
+    
+        try {
+            const readContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, publicProvider);
+            await fetchContractState(publicProvider, readContract);
+        } catch (err) {
+            console.warn("Public RPC sync pending:", err);
+        }
+
+        if (window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+                await connectWallet();
+            }
+        }
+    }
+
+
+
+        // Connect MetaMask & Enforce Polygon Mainnet
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert("Bitte installiere MetaMask im Browser!");
+                return;
+            }
+
+            try {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                provider = new ethers.BrowserProvider(window.ethereum);
+                const network = await provider.getNetwork();
+
+                // Switch to Polygon Mainnet if on another chain
+                if (network.chainId !== POLYGON_CHAIN_ID) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: POLYGON_CHAIN_HEX }],
+                        });
+                        provider = new ethers.BrowserProvider(window.ethereum);
+                    } catch (switchError) {
+                        showToast("Bitte wechsele in MetaMask auf Polygon Mainnet!");
+                        return;
+                    }
+                }
+
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+                // Update Header UI
+                document.getElementById('active-address').innerText = userAddress;
+                document.getElementById('status-ping').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
+                document.getElementById('status-dot').className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500";
+                document.getElementById('network-text').innerHTML = `Polygon Mainnet: <span class="text-green-400 font-semibold">LIVE (137)</span>`;
+
+                showToast("Mit Polygon Mainnet verbunden!");
+                await loadBlockchainData();
+            } catch (error) {
+                console.error("Wallet connection failed:", error);
+                showToast("Verbindung abgebrochen.");
+            }
+        }
+
+        async function loadBlockchainData() {
+            if (provider && contract) {
+                await fetchContractState(provider, contract);
+            } else {
+                await initReadOnlyAndTryConnect();
+            }
+        }
+        // Fetch Real Data from Polygon Smart Contract
+        async function fetchContractState(activeProvider, activeContract) {
+            try {
+                // 1. Live Block & Gas Price
+                const blockNumber = await activeProvider.getBlockNumber();
+                const feeData = await activeProvider.getFeeData();
+                document.getElementById('current-block').innerText = `#${blockNumber}`;
+
+                const rawGas = feeData.gasPrice || feeData.maxFeePerGas;
+                if (rawGas) {
+                    const gwei = parseFloat(ethers.formatUnits(rawGas, "gwei")).toFixed(1);
+                    document.getElementById('gas-price').innerText = `${gwei} Gwei`;
+                } else {
+                    document.getElementById('gas-price').innerText = `-- Gwei`;
+                }
+
+                // 2. Campaign Data
+                const campaign = await activeContract.infrastructureCampaign();
+                document.getElementById('kpi-pool').innerText = Number(campaign.totalPool).toLocaleString('de-DE');
+                document.getElementById('camp-infra').innerText = campaign.infrastructure;
+                document.getElementById('camp-target').innerText = campaign.targetEntity;
+
+                if (campaign.allocated) {
+                    document.getElementById('kpi-pool-status').innerHTML = `<i class="fa-solid fa-circle-check text-xs mr-1 text-green-400"></i> Allocated On-Chain`;
+                    document.getElementById('camp-badge').innerText = "Allocated";
+                    document.getElementById('camp-badge').className = "bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-bold";
+                    document.getElementById('activate-funding-btn').disabled = true;
+                    document.getElementById('activate-funding-btn').innerText = "Funding Already Allocated";
+                }
+
+                // 3. Total Flows & Registry Entries
+                const totalFlows = Number(await activeContract.totalFlowsRecorded());
+                document.getElementById('kpi-txs').innerText = totalFlows;
+
+                const tbody = document.getElementById('registry-table-body');
+                const ledgerBody = document.getElementById('ledger-body');
+                tbody.innerHTML = '';
+                ledgerBody.innerHTML = '';
+
+                let totalGrams = 0;
+
+                if (totalFlows === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">No material flows recorded yet.</td></tr>`;
+                } else {
+                    for (let i = totalFlows; i >= 1; i--) {
+                        const flow = await activeContract.registry(i);
+                        const grams = Number(flow.volume);
+                        totalGrams += grams;
+
+                        const dateStr = new Date(Number(flow.timestamp) * 1000).toLocaleString('de-DE', {
+                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
+
+                        // Registry Row
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-slate-800/40 transition-colors';
+                        tr.innerHTML = `
+                            <td class="p-2.5 font-mono text-gray-400">#${i}</td>
+                            <td class="p-2.5 font-mono text-emerald-300">${flow.reporter.slice(0, 6)}...${flow.reporter.slice(-4)}</td>
+                            <td class="p-2.5 text-white font-medium">${flow.category}</td>
+                            <td class="p-2.5 text-gray-300">${(grams / 1000).toFixed(2)} kg <span class="text-gray-500">(${grams} g)</span></td>
+                            <td class="p-2.5 text-gray-400">${dateStr}</td>
+                            <td class="p-2.5 text-right"><span class="bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Verified §21</span></td>
+                        `;
+                        tbody.appendChild(tr);
+
+                        // Event Ledger Row
+                        const ltr = document.createElement('tr');
+                        ltr.className = 'hover:bg-slate-800/30 transition-colors';
+                        ltr.innerHTML = `
+                            <td class="p-3 text-emerald-400">Flow #${i}</td>
+                            <td class="p-3"><span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold">FlowRecorded</span></td>
+                            <td class="p-3 text-gray-300 font-sans">${grams}g ${flow.category} (${dateStr})</td>
+                            <td class="p-3"><span class="text-emerald-400 flex items-center"><i class="fa-solid fa-circle-check text-[10px] mr-1"></i> On-Chain</span></td>
+                        `;
+                        ledgerBody.appendChild(ltr);
+                    }
+                }
+
+                // Update Total Weight KPI in kg
+                document.getElementById('kpi-weight').innerText = (totalGrams / 1000).toFixed(2);
+
+            } catch (error) {
+                console.error("Error reading contract state:", error);
+            }
+        }
+        // Write Transaction 1: recordMaterialFlow
+        async function handleCitizenSubmit(e) {
+            e.preventDefault();
+            if (!contract) {
+                await connectWallet();
+                if (!contract) return;
+            }
+
+            const btn = document.getElementById('submit-flow-btn');
+            const category = document.getElementById('mat-type').value;
+            const weightKg = parseFloat(document.getElementById('mat-weight').value);
+            const volumeGrams = Math.round(weightKg * 1000);
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Confirm in MetaMask...</span>`;
+
+                const tx = await contract.recordMaterialFlow(category, volumeGrams);
+                showToast("Transaction sent! Waiting for Polygon confirmation...");
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Writing to Polygon...</span>`;
+
+                await tx.wait();
+                showToast(`Success! ${weightKg} kg ${category} permanently recorded.`);
+                await loadBlockchainData();
+            } catch (error) {
+                console.error("Transaction failed:", error);
+                showToast("Transaction failed or rejected.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i><span>Submit On-Chain (Polygon)</span>`;
+            }
+        }
+
+        // Write Transaction 2: activateFundingZweckbindung
+        async function handleActivateFunding(e) {
+            e.preventDefault();
+            if (!contract) {
+                await connectWallet();
+                if (!contract) return;
+            }
+
+            const targetAddr = document.getElementById('target-entity-address').value.trim();
+            if (!ethers.isAddress(targetAddr)) {
+                showToast("Invalid Polygon/Ethereum wallet address!");
+                return;
+            }
+
+            const btn = document.getElementById('activate-funding-btn');
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Confirm in MetaMask...</span>`;
+
+                const tx = await contract.activateFundingZweckbindung(targetAddr);
+                showToast("Activating Zweckbindung on Polygon...");
+                await tx.wait();
+
+                showToast("Funding Zweckbindung permanently activated!");
+                await loadBlockchainData();
+            } catch (error) {
+                console.error("Funding activation failed:", error);
+                showToast("Activation failed (Only Founder allowed).");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Activate Zweckbindung On-Chain</span>`;
+            }
+        }
+
+        // Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast-box');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
